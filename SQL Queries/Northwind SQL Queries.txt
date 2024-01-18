@@ -73,4 +73,168 @@ HAVING  COUNT(O.OrderID)=0 OR  AVG(O.Freight)<=
 
 
 The warehouses of the Northwind company are designed to move to a new building in New York. In order to carry out transportation in an orderly and organized manner, you were asked to create a report that shows the company's categories and the average list prices of the products in a certain category, the table should be presented in this manner:
+*img not available on Github presentation formats
+Please note - the report will display a certain category (with the average list price of its products) and above it will be displayed the products belonging to that category and their list price, sorted by product name in ascending order
 
+
+SELECT C.CategoryID, C.CategoryName AS 'Category_Name/Product_name',
+	AVG(P.UnitPrice) AS 'AvgUnitPrice/UnitPrice',		
+	'$$Category$$' AS 'INFORMATION'
+FROM Categories AS C INNER JOIN Products AS P
+	ON P.CategoryID=C.CategoryID
+GROUP BY C.CategoryID, C.CategoryName
+UNION 
+SELECT P.CategoryID, P.ProductName, P.UnitPrice, '--Product--'
+FROM Products AS P
+ORDER BY C.CategoryID, INFORMATION DESC, [Category_Name/Product_name]
+--------------------------------------------------------------------------------------------------------------
+
+
+Create a report that will display for each product ordered in the order, its name, chained to your ID number such that both of them contain the signs:@@@ The name of the field will be NewName
+As part of the report, the quantity ordered/sold (Quantity) of the product, the quarter in which it was ordered, the number of months that have passed from the date of the order until today will also be shown, only for orders that were not ordered in 1996 and the quantity ordered/sold (Quantity) of the product in the order was between 30 and 100
+
+
+SELECT P.ProductName+'@@@ '+'23456789' AS 'New Name', 
+    DATEPART(Quarter,O.OrderDate) AS OrderQuarter,
+	   DATEDIFF(MONTH, O.OrderDate, GETDATE()) AS YearsSince,
+	   OD.Quantity
+FROM  Orders AS O INNER JOIN [Order Details] AS OD 
+ON O.OrderID=OD.OrderID
+	INNER JOIN Products AS P 
+ON OD.ProductID=P.ProductID
+WHERE YEAR(O.OrderDate) <>  1996 AND 
+OD.Quantity BETWEEN 30 AND 100
+--------------------------------------------------------------------------------------------------------------
+
+
+The accountant auditing Northwind's reports discovered several deficiencies in the reports on the Chocolate product. To this end, he requested to present, at the upcoming board meeting, a report detailing the products belonging to the category to which the Chocolate product belongs, in which the names of the products beginning with the letter S or products whose product code is your ID card
+In addition, the report will show the average quantity (Quantity) sold of these products, provided that it is higher than 20
+
+
+SELECT 	P.ProductName, AVG(OD.Quantity) as 'AverageQuantity'
+FROM 	Products AS P INNER JOIN [Order Details] AS OD
+	  	ON P.ProductID=OD.ProductID
+WHERE 	P.CategoryID = ( SELECT P.CategoryID
+				    FROM Products AS P
+	         WHERE P.ProductName LIKE 'Chocolade') AND p.ProductName LIKE 's%' 
+		  OR P.ProductID LIKE '123456789'
+GROUP BY  P.ProductID, P.ProductName
+HAVING 	AVG(OD.Quantity)> 20
+-------------------------------------------------------------------------------------------------------------
+
+
+As the company's new customer department consultant, I am asked to present at the management meeting, which is taking place next week, a report on finding customers who have not purchased anything.
+Two fundamentally different solutions are required.
+In addition, below the requested solution, a summary line must be displayed in which the name of the organization (North Wind) and the general amount of orders in the organization will be displayed
+Just to clarify, the solutions must be fundamentally different and using Left Join twice will not present a fundamentally second solution
+At the end of each result there is an obligation to add the number of customers who did not place orders at all
+
+
+SELECT c.CompanyName,
+       '' as 'count'
+FROM Customers AS C LEFT JOIN Orders AS O
+     ON O.CustomerID=C.CustomerID
+WHERE O.OrderID IS NULL
+union
+select 'zzzNorthwind',
+       count(*)
+from Orders as o
+union
+SELECT ' Total of Companies without orders',
+       count(*)
+FROM Customers AS C LEFT JOIN Orders AS O
+     ON O.CustomerID=C.CustomerID
+WHERE O.OrderID IS NULL
+order by 'count'
+
+SELECT c.CompanyName,
+       '' as 'count'
+FROM Customers AS C
+where c.CompanyName not in (SELECT distinct c.CompanyName
+                            FROM Customers AS C INNER JOIN Orders AS O
+                            ON O.CustomerID=C.CustomerID)
+union
+select 'zzzNorthwind',
+       count(*)
+from Orders as o
+union
+SELECT ' Total of Companies without orders',
+       count(*)
+FROM Customers AS C
+where c.CompanyName not in (SELECT distinct c.CompanyName
+                            FROM Customers AS C INNER JOIN Orders AS O
+                            ON O.CustomerID=C.CustomerID)
+order by 'count'
+----------------------------------------------------------------------------------------------------------
+
+
+As the CFO of the company, I am asked to present at the management meeting, which is taking place next week, a report of transportation costs and quantities according to the sales characteristics of their products.
+To this end, you will be asked to present for each customer the average sales prices resulting from products as well as the total quantities of products (Quantity) ordered in all orders
+This is only for customers whose company name begins with the letters A, B or C
+All the above information is based only on the number of products that are between the number of orders divided by 4 handled by an employee whose code is 9 and the number of products below the audit number of your ID number plus 1 multiplied by 14
+In detail: the management wants to see for each customer:
+Company Name.
+The name of the state.
+Average selling prices.
+The total quantities of the products you ordered in all orders.
+Number of products.
+
+
+SELECT c.CompanyName,
+       c.Country,
+       avg(od.UnitPrice) as AvgUnitPrice,
+       sum(od.Quantity) as SumQuantity,
+       count(distinct od.ProductID) as countProducts
+from Customers as c inner join Orders as o
+     on c.CustomerID=o.CustomerID
+     inner join [Order Details] as od
+     on o.OrderID=od.OrderID
+where c.CompanyName like '[abc]%'
+group by c.CompanyName, c.Country
+having COUNT(distinct od.ProductID) between (select count(o.OrderID)
+                                             from Orders as o
+                                            where o.EmployeeID=9)/4
+                                            and
+                                            (select count(distinct od.ProductID)
+                                            from [Order Details] as od
+                                            where od.ProductID < 14)
+----------------------------------------------------------------------------------------------------------
+
+
+The accountant, the auditor of the financial statements at Northwind, discovered deficiencies and inconsistencies in its statements.
+Because of this, he is interested in receiving information about the company's customers.
+Show each customer his name (company name), the number of unique products he ordered, the name of the city he came from, the name of the contact person and the number of orders placed by him. Every one of Northwind's customers must be treated.
+The conditions for the report output are:
+The customer code is your ID card number or if the name of the city the customer comes from contains the letters AR.
+In addition, the number of unique products that the customer ordered in his orders varies between 0 (did not order at all) and your age in years.
+
+
+SELECT  C.CompanyName,
+		COUNT(DISTINCT OD.ProductID) AS NumUniqueProducts,
+		C.CITY,
+		C.ContactName,
+		COUNT(DISTINCT O.OrderID) AS NumOrders
+FROM Customers AS C LEFT JOIN Orders AS O
+		ON O.CustomerID=C.CustomerID
+		LEFT JOIN [Order Details] AS OD
+		ON  OD.OrderID=O.OrderID
+WHERE C.CustomerID LIKE '55555555'	OR C.City LIKE '%AR%'
+GROUP BY C.CustomerID, C.CompanyName, C.City, C.ContactName
+HAVING COUNT(DISTINCT OD.ProductID) BETWEEN 0 AND 30
+-----------------------------------------------------------------------------------------------------------
+
+
+For all employees in the company, present the employee code, his full name in one field (in the field called FullName), seniority in years (in the field called Seniority), the number of orders he handled and the percentage of his number of orders out of the total number of orders ordered in the company
+All results (number of orders per employee and number of orders in the company as a whole) will refer to orders made in 1996 only
+
+
+SELECT E.EmployeeID, E.FirstName+' '+E.LastName, 
+	DATEDIFF(YEAR, E.HireDate, GETDATE()) AS SENIORITY,
+	COUNT(*) AS CountOrders,
+	100*COUNT(*)/(SELECT COUNT(*)
+			  FROM Orders AS O
+			  WHERE YEAR(O.OrderDate)=1996)  AS OredersPercent
+FROM Employees AS E LEFT JOIN Orders AS O
+	ON O.EmployeeID=E.EmployeeID
+WHERE YEAR(O.OrderDate)=1996
+GROUP BY E.EmployeeID, E.FirstName+' '+E.LastName, DATEDIFF(YEAR, E.HireDate, GETDATE)
