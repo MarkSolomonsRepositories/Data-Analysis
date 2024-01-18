@@ -238,3 +238,4 @@ FROM Employees AS E LEFT JOIN Orders AS O
 	ON O.EmployeeID=E.EmployeeID
 WHERE YEAR(O.OrderDate)=1996
 GROUP BY E.EmployeeID, E.FirstName+' '+E.LastName, DATEDIFF(YEAR, E.HireDate, GETDATE)
+*note: I've completed many more, these are some genral demonstations of my skills
