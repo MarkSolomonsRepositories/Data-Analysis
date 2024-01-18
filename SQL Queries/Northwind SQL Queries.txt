@@ -8,7 +8,7 @@ The redemption amount in the 1st quarter of 1997
 The redemption amount in the 3rd quarter of 1997
 The number of customer orders in general
 
-Query:
+
 SELECT C.CompanyName,Q1_97.SR_1_1997 AS 'Revenue 97_1',
        Q3_97.SR_3_1997 AS 'Revenue 97_3',Q_ALL.[Unique Count]
 FROM
@@ -34,4 +34,7 @@ WHERE Q_ALL.SR_ALL/
                    (SELECT SUM(OD.Quantity*OD.UnitPrice)
 FROM [Order Details] AS OD)>0.08
 -------------------------------------------------------------------------------------------------------------
+
+
+
 
