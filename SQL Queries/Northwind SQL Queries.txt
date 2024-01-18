@@ -1,0 +1,37 @@
+The manager of the sales department is interested in analyzing the sales data of customers whose contribution to the organization is higher than 8% (in general, regardless of periods). The contribution to the organization is defined as the amount of the customer's revenue in relation to the amount of general revenue in the organization.
+In accordance with this requirement of the manager, a comparison report must be created for all customers, of the revenue in two quarters as indicated below and a calculation must be made of the number of orders placed in both quarters together. Only existing customers must be taken into account (that is, not those whose data is missing in one of the comparisons)
+The result of the report will be sorted according to the number of orders made by the customers, from the lowest to the highest amount
+Note: When registering 8%, 0.08 must be entered
+The report will include the following details:
+The name of the client's company
+The redemption amount in the 1st quarter of 1997
+The redemption amount in the 3rd quarter of 1997
+The number of customer orders in general
+
+Query:
+SELECT C.CompanyName,Q1_97.SR_1_1997 AS 'Revenue 97_1',
+       Q3_97.SR_3_1997 AS 'Revenue 97_3',Q_ALL.[Unique Count]
+FROM
+Customers AS C INNER JOIN
+(SELECT O.CustomerID,SUM(OD.Quantity*OD.UnitPrice) AS 'SR_1_1997'
+FROM Orders AS O INNER JOIN [Order Details] AS OD 
+ON O.OrderID=OD.OrderID
+WHERE YEAR(O.OrderDate)=1997 AND DATEPART(QUARTER,O.OrderDate)=1
+GROUP BY O.CustomerID) AS Q1_97
+ON C.CustomerID=Q1_97.CustomerID
+INNER JOIN
+(SELECT O.CustomerID,SUM(OD.Quantity*OD.UnitPrice) AS 'SR_3_1997'
+FROM Orders AS O INNER JOIN [Order Details] AS OD ON O.OrderID=OD.OrderID
+WHERE YEAR(O.OrderDate)=1997 AND DATEPART(QUARTER,O.OrderDate)=3
+GROUP BY O.CustomerID) AS Q3_97
+ON Q3_97.CustomerID=Q1_97.CustomerID
+INNER JOIN
+(SELECT O.CustomerID,SUM(OD.Quantity*OD.UnitPrice) AS 'SR_ALL',COUNT(DISTINCT O.OrderID) AS 'Unique Count'
+FROM Orders AS O INNER JOIN [Order Details] AS OD ON O.OrderID=OD.OrderID
+GROUP BY O.CustomerID) AS Q_ALL
+ ON Q_ALL.CustomerID=Q3_97.CustomerID
+WHERE Q_ALL.SR_ALL/
+                   (SELECT SUM(OD.Quantity*OD.UnitPrice)
+FROM [Order Details] AS OD)>0.08
+-------------------------------------------------------------------------------------------------------------
+
