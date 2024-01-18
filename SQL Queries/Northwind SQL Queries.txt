@@ -35,6 +35,42 @@ WHERE Q_ALL.SR_ALL/
 FROM [Order Details] AS OD)>0.08
 -------------------------------------------------------------------------------------------------------------
 
+Northwind's management requested a report showing for each quarter and each month of the order date, the average revenue from sales in which the product's selling price is equal to its list price. Only quarters and months in which the total quantity ordered of the products is less than 5,000 will be displayed
+The results of the report will be sorted in ascending order of the quarters and months
 
 
+SELECT DATEPART(QUARTER, O.OrderDate) AS OrderQuarter,
+   MONTH(O.OrderDate) AS OrderMonth, 
+	   AVG(OD.Quantity*OD.UnitPrice) AS AVGRevenue
+FROM Orders AS O INNER JOIN [Order Details] AS OD
+	ON O.OrderID=OD.OrderID
+	INNER JOIN Products AS P
+	ON OD.ProductID=P.ProductID
+WHERE P.UnitPrice=OD.UnitPrice
+GROUP BY DATEPART(QUARTER, O.OrderDate),  MONTH(O.OrderDate)
+HAVING SUM(OD.Quantity) >  5000
+ORDER BY OrderQuarter,  OrderMonth
+-------------------------------------------------------------------------------------------------------------
+
+
+The customer service manager of the Northwind company claims that there is a problem in reporting the order details of the company's customers. Therefore, they are asking the information systems department for a report that includes up-to-date information about the orders, in which it will be detailed:
+For each customer (the name of the customer's company must be presented), the number of his orders and the year in which his first order was placed
+As part of the report, only customers who did not order at all or whose average shipping cost of all their orders (per customer) is lower than the average shipping cost of the customers from London (London) and Madrid (Madrid) will be presented
+
+
+SELECT C.CompanyName, 
+                  COUNT(O.OrderID) AS NumOrders, 
+                   YEAR(MIN(O.OrderDate)) AS LastOrderYear
+FROM       Customers AS C LEFT JOIN Orders AS O
+	      ON C.CustomerID=O.CustomerID
+GROUP BY C.CustomerID, C.CompanyName
+HAVING  COUNT(O.OrderID)=0 OR  AVG(O.Freight)<= 
+				(SELECT AVG(O.Freight)
+				 FROM Customers AS C INNER JOIN Orders  AS O
+				                  ON C.CustomerID=O.CustomerID
+			   WHERE C.City LIKE 'London' OR C.City LIKE 'MADRID')
+-------------------------------------------------------------------------------------------------------------
+
+
+The warehouses of the Northwind company are designed to move to a new building in New York. In order to carry out transportation in an orderly and organized manner, you were asked to create a report that shows the company's categories and the average list prices of the products in a certain category, the table should be presented in this manner:
 
