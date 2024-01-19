@@ -1,4 +1,4 @@
-<img width="956" alt="1" src="https://github.com/Perash14/Data-Analyst-Portfolio/assets/62203954/76890bff-8edb-4d88-b118-6205b4cb72c5">Here's a visual representation of this section:
+Here's a visual representation of this section:
 
 
 The Database:
