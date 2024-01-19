@@ -10,5 +10,6 @@ The extracted and sorted data:
 <img width="959" alt="2" src="https://github.com/Perash14/Data-Analyst-Portfolio/assets/62203954/3eb3a470-0316-4754-8c23-110668025cb9">
 <img width="960" alt="4" src="https://github.com/Perash14/Data-Analyst-Portfolio/assets/62203954/babeae4d-7b60-4439-a591-7c1092844da6">
 <img width="960" alt="5" src="https://github.com/Perash14/Data-Analyst-Portfolio/assets/62203954/49f4974a-0fc8-487f-83ec-59f81f756d7f">
+<img width="960" alt="3" src="https://github.com/Perash14/Data-Analyst-Portfolio/assets/62203954/86997ad3-2eb9-473b-a8ea-4b87369760ac">
 
 
