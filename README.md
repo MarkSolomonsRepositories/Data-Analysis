@@ -1,4 +1,4 @@
-# Data-Analyst-Portfolio
+# Data/BI-Analyst-Portfolio
 
 
 Here you can see an overview of my skills as a Data Analyst, its divided into multiple parts, each showcasing diferrent areas of expertise a Data Analyst must have:
