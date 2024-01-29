@@ -1,0 +1,85 @@
+DELIMITER //
+
+CREATE FUNCTION FindCost(OrderIDToVerify INT)
+RETURNS INT
+BEGIN
+RETURN(
+SELECT Cost
+FROM Orders
+Where OrderID = OrderIDToVerify);
+END;//
+
+DELIMITER  ;
+
+SELECT FindCost(5);
+-------------------------------------------------------------------------------------
+DELIMITER //
+
+CREATE PROCEDURE GetDiscount(Var INT)
+BEGIN
+SELECT CASE 
+WHEN Quantity >= 20  THEN Cost*0.8
+WHEN QUANTITY >= 10 THEN Cost*0.9
+END AS CostAfterDiscount
+FROM Orders
+Where OrderID = Var;
+END;//
+
+DELIMITER ;
+
+CALL GetDiscount(5);
+
+-------------------------------------------------------------------------------------------------
+DELIMITER //
+
+CREATE TRIGGER ProductSellPriceInsertCheck AFTER INSERT ON Products FOR EACH ROW
+BEGIN
+	IF NEW.SellPrice <= NEW.BuyPrice THEN
+INSERT INTO Notifications(Notification, DateTime)
+VALUES (Concat(CAST(NEW.ProductID AS CHAR) , ' was updated with a SellPrice of' ,CAST(NEW.SellPrice AS CHAR), ' which is the same or less than the BuyPrice'),  Now());
+END IF;
+END;//
+
+DELIMITER ;
+
+SELECT * FROM Notifications;
+
+INSERT INTO Products (ProductID, ProductName, BuyPrice, SellPrice, NumberOfItems)
+VALUES
+("P8", "product p8", 40, 40, 100);
+
+SELECT * FROM Products;
+
+DELIMITER //
+
+CREATE TRIGGER ProductSellPriceUpdateCheck AFTER UPDATE ON Products FOR EACH ROW
+BEGIN
+	IF NEW.SellPrice <= NEW.BuyPrice THEN
+INSERT INTO Notifications(Notification, DateTime)
+VALUES (Concat(CAST(NEW.ProductID AS CHAR) , ' was updated with a SellPrice of' ,CAST(NEW.SellPrice AS CHAR), ' which is the same or less than the BuyPrice'),  Now());
+END IF;
+END;//
+
+DELIMITER ;
+
+UPDATE Products
+SET SellPrice = 60
+WHERE ProductID = "P6";
+
+SELECT * FROM Notifications;
+DELIMITER //
+
+CREATE TRIGGER NotifyProductDelete AFTER DELETE ON Products FOR EACH ROW
+BEGIN
+INSERT INTO Notifications(Notification, DateTime)
+VALUES (Concat('The product with ', CAST(OLD.ProductID AS CHAR) , ' was deleted'),  Now());
+END;//
+
+DELIMITER ;
+
+DELETE FROM Products
+WHERE ProductID = "P3";
+
+SELECT * FROM Notifications;
+
+
