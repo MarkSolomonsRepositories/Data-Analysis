@@ -82,4 +82,119 @@ WHERE ProductID = "P3";
 
 SELECT * FROM Notifications;
 
+--------------------------------------------------------------------------------------
+
+Select OrderID, ProductID, Quantity, Date
+From Orders 
+
+CREATE Index IdxClientID ON Orders(ClientID);
+
+EXPLAIN SELECT * FROM Orders WHERE ClientID ='Cl1'; 
+
+ALTER TABLE Employees ADD COLUMN ReverseFullName VARCHAR(200);
+UPDATE Employees SET ReverseFullName = CONCAT(substring_index(FullName, ' ', -1), ' ', substring_index(FullName, ' ', 1));
+CREATE Index IdxReverseFullName ON Employees(ReverseFullName);
+SELECT * FROM Employees WHERE ReverseFullName LIKE 'Tolo%'; 
+EXPLAIN SELECT * FROM Employees WHERE ReverseFullName LIKE 'Tolo%'; 
+
+------------------------------------------------------------------------------------
+
+WITH 
+CL1CTE AS (SELECT CONCAT('Cl1: ', COUNT(OrderID), 'orders') AS 'Total number of orders' FROM Orders WHERE YEAR(Date) = 2022 AND ClientID = 'Cl1'), 
+CL2CTE AS (SELECT CONCAT('Cl2: ', COUNT(OrderID), 'orders') FROM Orders WHERE YEAR(Date) = 2022 AND ClientID = 'Cl2'),
+CL3CTE AS (SELECT CONCAT('Cl3: ', COUNT(OrderID), 'orders') FROM Orders WHERE YEAR(Date) = 2022 AND ClientID = 'Cl3') 
+SELECT * 
+FROM CL1CTE 
+UNION 
+SELECT * 
+FROM CL2CTE 
+UNION 
+SELECT * 
+FROM CL3CTE;
+
+-------------------------------------------------------------------------------------
+
+
+PREPARE GetOrderDetail FROM '
+	SELECT OrderID, Quantity, Cost
+	FROM Orders
+	WHERE ClientID = ? AND YEAR(Date) = ?
+'; 
+
+SET @ID = 'CL1';
+SET @Year = '2020';
+EXECUTE GetOrderDetail USING @ID, @Year;
+
+-------------------------------------------------------------------------------------
+
+SELECT ProductName, BuyPrice, SellPrice
+FROM Products
+WHERE ProductID = (
+SELECT ProductID
+FROM Activity
+WHERE Properties->'$Order' = 'True';
+)
+
+--------------------------------------------------------------------------------
+
+SELECT CONCAT(Count(o.OrderID), ' (2020)') As 'P4 Product: Quantity Sold'
+FROM Products AS p INNER JOIN Orders AS o ON p.ProductID=o.ProductID
+WHERE p.ProductID = 'P4' AND Year(o.Date) = 2020
+UNION
+SELECT CONCAT(Count(o.OrderID), ' (2021)') 
+FROM Products AS p INNER JOIN Orders AS o ON p.ProductID=o.ProductID
+WHERE p.ProductID = 'P4' AND Year(o.Date) = 2021
+UNION
+SELECT CONCAT(Count(o.OrderID), ' (2022)') 
+FROM Products AS p INNER JOIN Orders AS o ON p.ProductID=o.ProductID
+WHERE p.ProductID = 'P4' AND Year(o.Date) = 2022
+
+-----------------------------------------------------------------------------
+
+
+SELECT c.ClientID, c.ContactNumber, a.Street, a.County, o.OrderID, p.ProductID, p.ProductName, o.Cost, o.Date
+FROM Products AS p INNER JOIN Orders AS o ON p.ProductID=o.ProductID INNER JOIN Clients AS c ON o.ClientID=c.ClientID INNER JOIN Addresses AS a ON c.AddressID = a.AddressID
+WHERE YEAR(o.Date) = 2021 OR YEAR(o.Date) = 2022
+ORDER BY o.Date ASC;
+
+-----------------------------------------------------------------------------------
+
+
+DELIMITER //
+
+CREATE FUNCTION FindSoldQuantity(ProductIDToVerify VARCHAR(255), YearToVerify INT)
+RETURNS INT
+BEGIN
+RETURN(
+SELECT SUM(o.Quantity)
+FROM Products AS p INNER JOIN Orders AS o ON p.ProductID=o.ProductID
+Where p.ProductID = ProductIDToVerify AND YEAR(o.Date) = YearToVerify
+);
+END;//
+
+DELIMITER  ;
+
+SELECT FindSoldQuantity('P3', 2021);
+
+---------------------------------------------------------------------------------------
+
+
+DELIMITER //
+
+CREATE FUNCTION FindAverageCost(YearToVerify INT)
+RETURNS INT
+BEGIN
+RETURN(
+SELECT AVG(o.Cost)
+FROM Orders AS o 
+Where YEAR(o.Date) = YearToVerify
+);
+END;//
+
+DELIMITER  ;
+
+SELECT FindAverageCost(2022);
+
+----------------------------------------------------------------------------------------------
+
 
