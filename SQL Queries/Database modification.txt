@@ -50,6 +50,8 @@ VALUES
 
 SELECT * FROM Products;
 
+------------------------------------------------------------------------------------------------
+
 DELIMITER //
 
 CREATE TRIGGER ProductSellPriceUpdateCheck AFTER UPDATE ON Products FOR EACH ROW
@@ -68,6 +70,8 @@ WHERE ProductID = "P6";
 
 SELECT * FROM Notifications;
 DELIMITER //
+
+---------------------------------------------------------------------------------------------
 
 CREATE TRIGGER NotifyProductDelete AFTER DELETE ON Products FOR EACH ROW
 BEGIN
@@ -197,4 +201,217 @@ SELECT FindAverageCost(2022);
 
 ----------------------------------------------------------------------------------------------
 
+DELIMITER //
+
+CREATE FUNCTION FindCost(OrderIDToVerify INT)
+RETURNS INT
+BEGIN
+RETURN(
+SELECT Cost
+FROM Orders
+Where OrderID = OrderIDToVerify);
+END;//
+
+DELIMITER  ;
+
+SELECT FindCost(5);
+
+---------------------------------------------------------------------------------------------------
+
+DELIMITER //
+
+CREATE PROCEDURE GetDiscount(Var INT)
+BEGIN
+SELECT CASE 
+WHEN Quantity >= 20  THEN Cost*0.8
+WHEN QUANTITY >= 10 THEN Cost*0.9
+END AS CostAfterDiscount
+FROM Orders
+Where OrderID = Var;
+END;//
+
+DELIMITER ;
+
+CALL GetDiscount(5);
+
+-----------------------------------------------------------------------------------------------------
+
+DELIMITER //
+
+CREATE TRIGGER ProductSellPriceInsertCheck AFTER INSERT ON Products FOR EACH ROW
+BEGIN
+	IF NEW.SellPrice <= NEW.BuyPrice THEN
+INSERT INTO Notifications(Notification, DateTime)
+VALUES (Concat(CAST(NEW.ProductID AS CHAR) , ' was updated with a SellPrice of' ,CAST(NEW.SellPrice AS CHAR), ' which is the same or less than the BuyPrice'),  Now());
+END IF;
+END;//
+
+DELIMITER ;
+
+SELECT * FROM Notifications;
+
+INSERT INTO Products (ProductID, ProductName, BuyPrice, SellPrice, NumberOfItems)
+VALUES
+("P8", "product p8", 40, 40, 100);
+
+SELECT * FROM Products;
+
+-----------------------------------------------------------------------------------------------------------
+
+DELIMITER //
+
+CREATE TRIGGER ProductSellPriceUpdateCheck AFTER UPDATE ON Products FOR EACH ROW
+BEGIN
+	IF NEW.SellPrice <= NEW.BuyPrice THEN
+INSERT INTO Notifications(Notification, DateTime)
+VALUES (Concat(CAST(NEW.ProductID AS CHAR) , ' was updated with a SellPrice of' ,CAST(NEW.SellPrice AS CHAR), ' which is the same or less than the BuyPrice'),  Now());
+END IF;
+END;//
+
+DELIMITER ;
+
+UPDATE Products
+SET SellPrice = 60
+WHERE ProductID = "P6";
+
+SELECT * FROM Notifications;
+
+-----------------------------------------------------------------------------------------------------------
+
+DELIMITER //
+
+
+CREATE TRIGGER NotifyProductDelete AFTER DELETE ON Products FOR EACH ROW
+BEGIN
+INSERT INTO Notifications(Notification, DateTime)
+VALUES (Concat('The product with ', CAST(OLD.ProductID AS CHAR) , ' was deleted'),  Now());
+END;//
+
+DELIMITER ;
+
+DELETE FROM Products
+WHERE ProductID = "P3";
+
+SELECT * FROM Notifications;
+
+------------------------------------------------------------------------------------------------------------
+
+DELIMITER //
+
+CREATE PROCEDURE EvaluateProduct(IN ProdID VARCHAR(10), OUT year1 INT, OUT year2 INT, OUT year3 INT)
+BEGIN
+SELECT SUM(o.Quantity) INTO year1
+FROM Orders as o 
+Where o.ProductID = ProdID AND YEAR(o.Date) = 2020;
+
+SELECT SUM(o.Quantity) INTO year2
+FROM Orders as o 
+Where o.ProductID = ProdID AND YEAR(o.Date) = 2021;
+
+SELECT SUM(o.Quantity) INTO year3
+FROM Orders as o 
+Where o.ProductID = ProdID AND YEAR(o.Date) = 2022;
+END//
+
+DELIMITER ;
+
+CALL EvaluateProduct('P1', @sold_items_2020, @sold_items_2021, @sold_items_2022);
+
+SELECT @sold_items_2020, @sold_items_2021, @sold_items_2022;
+
+------------------------------------------------------------------------------------------------------------
+
+DELIMITER //
+
+CREATE TRIGGER UpdateAudit AFTER INSERT ON Orders FOR EACH ROW
+BEGIN
+INSERT INTO Audit(OrderDateTime)
+VALUES (NOW());
+END;//
+
+DELIMITER ;
+
+INSERT INTO Orders (OrderID, ClientID, ProductID , Quantity, Cost, Date) VALUES   
+  
+(31, "Cl1", "P1", 10, 500, "2020-09-01" ),   
+  
+(32, "Cl2", "P2", 5, 100, "2020-09-05"),   
+  
+(33, "Cl3", "P3", 20, 800, "2020-09-03");
+
+
+SELECT * FROM Audit;
+
+-------------------------------------------------------------------------------------------------------------
+
+SELECT CASE
+      WHEN c.FullName IS NOT NULL THEN c.FullName    
+WHEN e.FullName IS NOT NULL THEN e.FullName
+END AS FullName, a.Street, a.County
+FROM Clients AS c RIGHT JOIN Addresses AS a ON c.AddressID=a.AddressID LEFT JOIN Employees AS e ON e.AddressID=a.AddressID
+ORDER BY a.Street ASC;
+
+------------------------------------------------------------------------------------------------------------
+
+WITH 
+CL1CTE AS (SELECT CONCAT (SUM(Cost), ' (2020)') AS 'Total sum of P2 Product' FROM Orders WHERE YEAR(Date) = 2020 AND ProductID = 'P2'), 
+CL2CTE AS (SELECT CONCAT (SUM(Cost), ' (2021) ') FROM Orders WHERE YEAR(Date) = 2021 AND ProductID = 'P2'),
+CL3CTE AS (SELECT CONCAT (SUM(Cost), ' (2022) ') FROM Orders WHERE YEAR(Date) = 2022 AND ProductID = 'P2') 
+SELECT * 
+FROM CL1CTE 
+UNION 
+SELECT * 
+FROM CL2CTE 
+UNION 
+SELECT * 
+FROM CL3CTE;
+
+-------------------------------------------------------------------------------------------------------------
+
+SELECT a.Properties->>'$.ClientID' AS ClientID , c.FullName, c.ContactNumber, a.Properties->>'$.ProductID' AS ProductID
+FROM Clients AS c RIGHT JOIN Activity AS a ON c.ClientID = a.Properties->>'$.ClientID';
+
+------------------------------------------------------------------------------------------------------------
+
+DELIMITER //
+
+CREATE PROCEDURE GetProfit(IN ProdID VARCHAR(10), IN year1 INT)
+BEGIN
+
+DECLARE Profit DECIMAL(7, 2) DEFAULT 0.0;
+DECLARE Sold_Quantity, Buy_Price, Sell_Price INT DEFAULT 0;
+
+SELECT SUM(Quantity) INTO Sold_Quantity
+FROM Orders
+WHERE YEAR(Date) = year1 AND ProductID = ProdID;
+
+SELECT SUM(p.BuyPrice) INTO Buy_Price
+FROM Products AS p
+WHERE p.ProductID = ProdID;
+
+SELECT SUM(p.SellPrice) INTO Sell_Price
+FROM Products AS p
+WHERE p.ProductID = ProdID;
+
+SELECT (Sold_Quantity*Sell_Price - Sold_Quantity*Buy_Price) INTO Profit;
+
+SELECT Profit;
+
+END//
+
+DELIMITER ;
+
+CALL GetProfit('P1', 2020);
+
+----------------------------------------------------------------------------------------------------------
+
+CREATE VIEW DataSummary AS
+SELECT c.FullName, c.ContactNumber, a.County, o.ProductID, o.Cost, o.Date, p.ProductName
+FROM Addresses AS a INNER JOIN Clients AS c ON a.AddressID=c.AddressID INNER JOIN Orders AS o ON c.ClientID = o.ClientID INNER JOIN Products AS p ON o.ProductID = p.ProductID
+WHERE YEAR(o.Date)=2022
+ORDER BY o.Cost DESC;
+
+SELECT * FROM DataSummary;
+
+---------------------------------------------------------------------------------------------------------------
 
